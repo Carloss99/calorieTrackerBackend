@@ -6,6 +6,9 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
 
+
+
+
 class FoodItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     food_name = db.Column(db.String(100), nullable=False)
