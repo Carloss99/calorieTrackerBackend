@@ -14,6 +14,9 @@ foods_schema = FoodItemSchema(many=True)
 @bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+
+    if not data:
+        return jsonify({'error:"invalid'})
     username =data.get('username')
     password = data.get('password')
 
@@ -22,7 +25,7 @@ def register():
     if User.query.filter_by(username=username).first():
         return jsonify({"Username already exists"})
     
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf')
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(username=username, password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
@@ -32,20 +35,43 @@ def register():
 
 
 #Login Route
-@bp.route('/login', methods=["POST","GET"])
-def login():
-    if request.method == "POST":
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        user = User.query.filter_by(username=username).first()
+# @bp.route('/login', methods=["POST","GET"])
+# def login():
+#     if request.method == "POST":
+#         data = request.get_json()
+#         if not data:
+#             return jsonify({'error':'invalid'})
 
-        if user and bcrypt.check_password_hash(user.password, password):
-            access_token = create_access_token(identity=str(user.id))
-            print("userID" , user.id, type(user.id))
-            return jsonify(access_token=access_token)
-        return jsonify({"error": "Invalid credentials."})
-    return redirect(url_for("login"))
+#         username = data.get('username')
+#         password = data.get('password')
+#         user = User.query.filter_by(username=username).first()
+
+#         if user and bcrypt.check_password_hash(user.password, password):
+#             access_token = create_access_token(identity=str(user.id))
+#             print("userID" , user.id, type(user.id))
+#             return jsonify(access_token=access_token)
+#         return jsonify({"error": "Invalid credentials."})
+#     return redirect(url_for("login"))
+
+@bp.route('/login', methods=["POST"])
+def login():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Missing or invalid JSON"}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    user = User.query.filter_by(username=username).first()
+
+    if user and bcrypt.check_password_hash(user.password, password):
+        access_token = create_access_token(identity=str(user.id))
+        return jsonify(access_token=access_token), 200
+
+    return jsonify({"error": "Invalid credentials."}), 401
 
 
 #profile route
@@ -61,6 +87,8 @@ def profile():
         })
     return jsonify({"error":"User not found"})
 
+
+
 @bp.route("/foods", methods=["GET", "POST"])
 @jwt_required()
 def handle_foods():
@@ -74,9 +102,12 @@ def handle_foods():
         db.session.commit()
         return food_schema.jsonify(data)
     else:
-        entries = FoodItem.query.all()
+        user_id = get_jwt_identity()
+        entries = FoodItem.query.filter_by(user_id=user_id).all()
         return foods_schema.jsonify(entries)
     
+
+
 @bp.route("/foods/<int:food_id>", methods=["PUT"])
 @jwt_required()
 def update_food(food_id):

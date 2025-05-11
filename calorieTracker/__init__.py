@@ -5,6 +5,7 @@ from flask.cli import with_appcontext
 import click
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
+import os
 
 
 db = SQLAlchemy()

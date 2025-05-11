@@ -6,6 +6,7 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
 
+    food_items = db.relationship('FoodItem', backref='user', lazy=True)
 
 
 
